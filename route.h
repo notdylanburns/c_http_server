@@ -1,21 +1,26 @@
 #ifndef ROUTE_H_GUARD_
 #define ROUTE_H_GUARD_
 
-#include "request.h"
+#include <stdlib.h>
 
-enum HTTPMethod { GET, POST, PUT, DELETE };
+#include "http.h"
+#include "server.h"
 
-typedef void (*RouteHandler)(struct HTTPRequest *req, struct HTTPResponse *res);
+struct HTTPServer;
+
+typedef void (*RouteHandler)(struct HTTPRequest *, struct HTTPResponse *, struct HTTPServer *);
 
 struct RouteTableEntry {
     enum HTTPMethod method;
     char *route;
-
+    RouteHandler handler;
 };
 
 struct RouteTable {
     struct RouteTableEntry **entries;
     int count;
 };
+
+extern struct RouteTable *new_routetable();
 
 #endif
