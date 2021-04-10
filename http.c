@@ -301,16 +301,30 @@ struct HTTPResponse *new_httpresponse() {
 }
 
 char *build_httpresponse(struct HTTPResponse *res) {
-    int headerLen = (strlen(res->version) + 1) /* version + ' ' */ + 
-                    4 /* status + ' ' */ + 
-                    (strlen(res->status_msg) + 2) /* status_msg + \r\n */ +
-                    38 /* Date: day dd mm yyyy hh:mm:ss UTC\r\n */ +
-                    10 + strlen(res->server) /* Server: server\r\n */ +
-                    14 + strlen(res->content_type) /* Content-Type: content_type */ +
-                    18 + floor(log10(abs(res->content_length))) + 1 /* Content-Length: content_length\r\n */ +
-                    2 /* \r\n */;
-    char *header = malloc(headerLen + 1);
-    sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", res->version, res->status, res->status_msg, res->date, res->server, res->content_type, res->content_length);
+    int headerLen;
+    char *header;
+    if (res->content_length) {
+        headerLen = (strlen(res->version) + 1) /* version + ' ' */ + 
+                        4 /* status + ' ' */ + 
+                        (strlen(res->status_msg) + 2) /* status_msg + \r\n */ +
+                        38 /* Date: day dd mm yyyy hh:mm:ss UTC\r\n */ +
+                        10 + strlen(res->server) /* Server: server\r\n */ +
+                        14 + strlen(res->content_type) /* Content-Type: content_type */ +
+                        18 + floor(log10(abs(res->content_length))) + 1 /* Content-Length: content_length\r\n */ +
+                        2 /* \r\n */;
+        header = malloc(headerLen + 1);
+        sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", res->version, res->status, res->status_msg, res->date, res->server, res->content_type, res->content_length);
+    } else {
+        headerLen = (strlen(res->version) + 1) /* version + ' ' */ + 
+                        4 /* status + ' ' */ + 
+                        (strlen(res->status_msg) + 2) /* status_msg + \r\n */ +
+                        38 /* Date: day dd mm yyyy hh:mm:ss UTC\r\n */ +
+                        10 + strlen(res->server) /* Server: server\r\n */ +
+                        2 /* \r\n */;
+        header = malloc(headerLen + 1);
+        sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\n\r\n", res->version, res->status, res->status_msg, res->date, res->server);
+    
+    }
     
     return header;
 

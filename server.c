@@ -109,7 +109,22 @@ void *handle_request(void *vargp) {
 
     RouteHandler h = get_handler(server, req->method, req->route);
     if (h == NULL) {
-        // Invalid route
+        struct HTTPResponse *res = new_httpresponse();
+        
+        // Set version to http/1.1
+        res->version = calloc(9, 1);
+        strcpy(res->version, "HTTP/1.1");
+        
+        // Set default status
+        res->status = NOT_FOUND;
+        res->status_msg = calloc(10, 1);
+        strcpy(res->status_msg, "NOT FOUND");
+
+        res->server = calloc(strlen(SERVERNAME) + 1, 0);
+        strcpy(res->server, SERVERNAME);
+
+        send_response(open_socket, res);
+        
     } else {
         struct HTTPResponse *res = new_httpresponse();
         
