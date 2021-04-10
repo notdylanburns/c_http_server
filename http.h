@@ -130,4 +130,7 @@ extern struct HTTPResponse *new_httpresponse();
 extern char *build_httpresponse(struct HTTPResponse *res);
 extern void destroy_httpresponse(struct HTTPResponse *res);
 
+extern int set_header(struct HTTPResponse *res, char *version, enum StatusCode status, char *status_msg);
+extern int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, uint8_t *content);
+
 #endif

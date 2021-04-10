@@ -29,6 +29,6 @@ extern void route(HTTPServer *server, enum HTTPMethod method, char *route, Route
 extern void run_server(HTTPServer *server, uint16_t port);
 extern RouteHandler get_handler(HTTPServer *server, enum HTTPMethod method, char *route);
 extern void *handle_request(void *vargp); // Threading function
-extern void stop_server(HTTPServer *server, uint8_t error);
+extern void destroy_server(HTTPServer *server);
 
 #endif

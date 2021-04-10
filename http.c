@@ -339,3 +339,38 @@ void destroy_httpresponse(struct HTTPResponse *res) {
     free(res->content);
     free(res);
 }
+
+int set_header(struct HTTPResponse *res, char *version, enum StatusCode status, char *status_msg) {
+    int len = strlen(version) + 1;
+    res->version = realloc(res->version, len);
+    if (res->version == NULL) return 1;
+    strcpy(res->version, version);
+    res->version[len - 1] = '\0';
+
+    res->status = status;
+
+    len = strlen(status_msg) + 1;
+    res->status_msg = realloc(res->status_msg, len);
+    if (res->status_msg == NULL) return 1;
+    strcpy(res->status_msg, status_msg);
+    res->status_msg[len - 1] = '\0';
+
+    return 0;
+}
+
+int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, uint8_t *content) {
+    int len = strlen(content_type) + 1;
+    res->content_type = realloc(res->content_type, len);
+    if (res->content_type == NULL) return 1;
+    strcpy(res->content_type, content_type);
+    res->content_type[len - 1] = '\0';
+
+    res->content_length = content_length;
+
+    res->content = malloc(content_length);
+    if (res->content == NULL) return 1;
+    memcpy(res->content, content, content_length);
+
+    return 0;
+
+}

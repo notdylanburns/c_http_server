@@ -25,3 +25,12 @@ void add_route(struct RouteTable *rt, struct RouteTableEntry *rte) {
 
     rt->entries[rt->count - 1] = rte;
 }
+
+void destroy_routetable(struct RouteTable *rt) {
+    for (int i = 0; i < rt->count; i++) {
+        free(rt->entries[i]->route);
+        free(rt->entries[i]);
+    }
+    free(rt->entries);
+    free(rt);
+}

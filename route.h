@@ -21,5 +21,5 @@ struct RouteTable {
 extern struct RouteTable *new_routetable();
 extern struct RouteTableEntry *new_routetableentry(enum HTTPMethod method, char *route, RouteHandler handler);
 extern void add_route(struct RouteTable *rt, struct RouteTableEntry *rte);
-
+extern void destroy_routetable(struct RouteTable *rt);
 #endif

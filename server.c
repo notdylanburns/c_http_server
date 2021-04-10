@@ -111,31 +111,20 @@ void *handle_request(void *vargp) {
     if (h == NULL) {
         struct HTTPResponse *res = new_httpresponse();
         
-        // Set version to http/1.1
-        res->version = calloc(9, 1);
-        strcpy(res->version, "HTTP/1.1");
-        
-        // Set default status
-        res->status = NOT_FOUND;
-        res->status_msg = calloc(10, 1);
-        strcpy(res->status_msg, "NOT FOUND");
+        set_header(res, "HTTP/1.1", NOT_FOUND, "Not Found");
 
         res->server = calloc(strlen(SERVERNAME) + 1, 0);
         strcpy(res->server, SERVERNAME);
 
+        const char *msg = "404 Not Found";
+        set_content(res, "text/html", strlen(msg), (uint8_t *)msg);
+
         send_response(open_socket, res);
-        
+
     } else {
         struct HTTPResponse *res = new_httpresponse();
         
-        // Set version to http/1.1
-        res->version = calloc(9, 1);
-        strcpy(res->version, "HTTP/1.1");
-        
-        // Set default status
-        res->status = OK;
-        res->status_msg = calloc(3, 1);
-        strcpy(res->status_msg, "OK");
+        set_header(res, "HTTP/1.1", OK, "OK");
 
         res->server = calloc(strlen(SERVERNAME) + 1, 0);
         strcpy(res->server, SERVERNAME);
@@ -163,4 +152,10 @@ RouteHandler get_handler(HTTPServer *server, enum HTTPMethod method, char *route
     }
 
     return NULL;
+};
+
+void destroy_server(HTTPServer *server) {
+    destroy_routetable(server->rt);
+    free(server);
+    server = NULL;
 };
