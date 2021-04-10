@@ -7,3 +7,21 @@ struct RouteTable *new_routetable() {
     rt->count = 0;
     return rt;
 }
+
+struct RouteTableEntry *new_routetableentry(enum HTTPMethod method, char *route, RouteHandler handler) {
+    struct RouteTableEntry *rte = malloc(sizeof(struct RouteTableEntry));
+    if (rte == NULL) return NULL;
+
+    rte->method = method;
+    rte->route = route;
+    rte->handler = handler;
+
+    return rte;
+}
+
+void add_route(struct RouteTable *rt, struct RouteTableEntry *rte) {
+    rt->count++;
+    rt->entries = realloc(rt->entries, rt->count * sizeof(struct RouteTable *));
+
+    rt->entries[rt->count - 1] = rte;
+}
