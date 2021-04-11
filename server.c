@@ -38,7 +38,7 @@ void run_server(HTTPServer *server, uint16_t port) {
         exit(EXIT_FAILURE);
     }
 
-    int open_socket;
+    int open_socket = 0;
 
     pthread_t thread_id;
     while (server->running) {
@@ -69,12 +69,9 @@ int send_response(int socketfd, struct HTTPResponse *res) {
     strftime(res->date, 30, "%a, %02d %b %Y %T UTC", t);
 
     char *responseBuffer = build_httpresponse(res);
+    int err = send(socketfd, responseBuffer, strlen(responseBuffer), 0);
 
-    int err;
-    err = (send(socketfd, responseBuffer, strlen(responseBuffer), 0) << 8);
-    err |= (send(socketfd, res->content, res->content_length, 0));
-    send(socketfd, "\r\n", 3, 0);
-
+    free(responseBuffer);
     destroy_httpresponse(res);
 
     return err;

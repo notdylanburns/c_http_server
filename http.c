@@ -12,6 +12,7 @@ struct HTTPRequest *new_httprequest() {
     req->method = METHOD_NONE;
     req->route = NULL;
     req->params = NULL;
+    req->paramCount = 0;
     req->version = NULL;
     req->host = NULL;
     req->user_agent = NULL;
@@ -66,8 +67,11 @@ struct URLParam *new_urlparam(char *key, char *value) {
 
 void destroy_urlparam(struct URLParam *param) {
     free(param->key);
+    param->key = NULL;
     free(param->value);
+    param->value = NULL;
     free(param);
+    param = NULL;
 }
 
 void add_param(struct HTTPRequest *req, struct URLParam *param) {
@@ -266,22 +270,33 @@ struct HTTPRequest *build_httprequest(int socketfd) {
 
 }
 
-struct URLParam *get_urlparam(struct HTTPRequest *req, char *key) {
+char *get_urlparam(struct HTTPRequest *req, char *key) {
     for (int i = 0; i < req->paramCount; i++) {
-        if (strcmp(req->params[i]->key, key) == 0) return req->params[i];
+        if (strcmp(req->params[i]->key, key) == 0) {
+            char *returnVal = calloc(strlen(req->params[i]->value), 1);
+            strcpy(returnVal, req->params[i]->value);
+            return returnVal;
+        }
     }
     return NULL;
 }
 
 void destroy_httprequest(struct HTTPRequest *req) {
     free(req->route);
+    req->route = NULL;
     free(req->version);
+    req->version = NULL;
     free(req->host);
+    req->host = NULL;
     free(req->user_agent);
+    req->user_agent = NULL;
     free(req->content_type);
+    req->content_type = NULL;
     free(req->content);
+    req->content = NULL;
     for (int i = 0; i < req->paramCount; i++) destroy_urlparam(req->params[i]);
     free(req->params);
+    req->params = NULL;
     free(req);
     req = NULL;
 }
@@ -303,26 +318,43 @@ struct HTTPResponse *new_httpresponse() {
 char *build_httpresponse(struct HTTPResponse *res) {
     int headerLen;
     char *header;
+    if (res->version == NULL) {
+        res->version = calloc(strlen("HTTP/1.1") + 1, 1);
+        strcpy(res->version, "HTTP/1.1");
+    }
+    if (res->status == 0) {
+        res->status = OK;
+    }
+    if (res->status_msg == NULL) {
+        res->status_msg = calloc(strlen("OK") + 1, 1);
+        strcpy(res->version, "OK");
+    }
+    if (res->content_type == NULL) {
+        res->content_type = calloc(strlen("text/html") + 1, 1);
+        strcpy(res->content_type, "text/html");
+    }
     if (res->content_length) {
         headerLen = (strlen(res->version) + 1) /* version + ' ' */ + 
                         4 /* status + ' ' */ + 
                         (strlen(res->status_msg) + 2) /* status_msg + \r\n */ +
                         38 /* Date: day dd mm yyyy hh:mm:ss UTC\r\n */ +
                         10 + strlen(res->server) /* Server: server\r\n */ +
-                        14 + strlen(res->content_type) /* Content-Type: content_type */ +
+                        16 + strlen(res->content_type) /* Content-Type: content_type\r\n */ +
                         18 + floor(log10(abs(res->content_length))) + 1 /* Content-Length: content_length\r\n */ +
-                        2 /* \r\n */;
+                        2 /* \r\n */ +
+                        res->content_length + 2 /* content\r\n */;
         header = malloc(headerLen + 1);
-        sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", res->version, res->status, res->status_msg, res->date, res->server, res->content_type, res->content_length);
+        sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s\r\n", res->version, res->status, res->status_msg, res->date, res->server, res->content_type, res->content_length, res->content);
     } else {
         headerLen = (strlen(res->version) + 1) /* version + ' ' */ + 
                         4 /* status + ' ' */ + 
                         (strlen(res->status_msg) + 2) /* status_msg + \r\n */ +
                         38 /* Date: day dd mm yyyy hh:mm:ss UTC\r\n */ +
                         10 + strlen(res->server) /* Server: server\r\n */ +
+                        16 + strlen(res->content_type) /* Content-Type: content_type\r\n */ +
                         2 /* \r\n */;
         header = malloc(headerLen + 1);
-        sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\n\r\n", res->version, res->status, res->status_msg, res->date, res->server);
+        sprintf(header, "%s %03d %s\r\nDate: %s\r\nServer: %s\r\nContent-Type: %s\r\n", res->version, res->status, res->status_msg, res->date, res->server, res->content_type);
     
     }
     
@@ -358,7 +390,7 @@ int set_header(struct HTTPResponse *res, char *version, enum StatusCode status, 
     return 0;
 }
 
-int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, uint8_t *content) {
+int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, Bytes content) {
     int len = strlen(content_type) + 1;
     res->content_type = realloc(res->content_type, len);
     if (res->content_type == NULL) return 1;
@@ -367,9 +399,13 @@ int set_content(struct HTTPResponse *res, MimeType content_type, int content_len
 
     res->content_length = content_length;
 
-    res->content = malloc(content_length);
-    if (res->content == NULL) return 1;
-    memcpy(res->content, content, content_length);
+    if (res->content_length) {
+        res->content = realloc(res->content, content_length);
+        if (res->content == NULL) return 1;
+        memcpy(res->content, content, content_length);
+    } else {
+        res->content = NULL;
+    }
 
     return 0;
 

@@ -96,6 +96,7 @@ extern struct URLParam *new_urlparam(char *key, char *value);
 extern void destroy_urlparam(struct URLParam *param);
 
 typedef char * MimeType;
+typedef uint8_t * Bytes;
 
 struct HTTPRequest {
     enum HTTPMethod method;
@@ -113,7 +114,7 @@ struct HTTPRequest {
 extern struct HTTPRequest *new_httprequest();
 extern struct HTTPRequest *build_httprequest(int socketfd);
 extern void destroy_httprequest(struct HTTPRequest *req);
-extern struct URLParam *get_urlparam(struct HTTPRequest *req, char *key);
+extern char *get_urlparam(struct HTTPRequest *req, char *key);
 
 struct HTTPResponse {
     char *version;
@@ -131,6 +132,6 @@ extern char *build_httpresponse(struct HTTPResponse *res);
 extern void destroy_httpresponse(struct HTTPResponse *res);
 
 extern int set_header(struct HTTPResponse *res, char *version, enum StatusCode status, char *status_msg);
-extern int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, uint8_t *content);
+extern int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, Bytes content);
 
 #endif
