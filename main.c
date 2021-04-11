@@ -22,6 +22,7 @@ ROUTE(get_home) {
     }
     if (size) {
         char response[size];
+        response[0] = '\0';
         for (int i = 0; i < count; i++) {
             strcat(response, items[i]->key);
             strcat(response, ": ");
@@ -42,7 +43,8 @@ ROUTE(get_add) {
     i->key = k;
     i->value = v;
     items[count++] = i;
-    set_header(res, "HTTP/1.1", RESET_CONTENT, "Reset Content");
+    write_header(res, "Location", "/");
+    set_status(res, "HTTP/1.1", CREATED, "Created");
 }
 
 ROUTE(get_test) {

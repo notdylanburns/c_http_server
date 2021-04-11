@@ -95,6 +95,14 @@ struct URLParam {
 extern struct URLParam *new_urlparam(char *key, char *value);
 extern void destroy_urlparam(struct URLParam *param);
 
+struct HTTPHeader {
+    char *key;
+    char *value;
+};
+
+extern struct HTTPHeader *new_httpheader(char *key, char *value);
+extern void destroy_httpheader(struct HTTPHeader *header);
+
 typedef char * MimeType;
 typedef uint8_t * Bytes;
 
@@ -108,7 +116,7 @@ struct HTTPRequest {
     char *user_agent;
     int content_length;
     MimeType content_type;
-    uint8_t *content;
+    uint8_t *body;
 };
 
 extern struct HTTPRequest *new_httprequest();
@@ -120,18 +128,22 @@ struct HTTPResponse {
     char *version;
     enum StatusCode status;
     char *status_msg;
-    char *server;
+    struct HTTPHeader **headers;
+    int header_count;
+    /*char *server;
     char *date;
     MimeType content_type;
-    int content_length;
-    uint8_t *content;
+    int content_length;*/
+    uint8_t *body;
 };
 
 extern struct HTTPResponse *new_httpresponse();
 extern char *build_httpresponse(struct HTTPResponse *res);
 extern void destroy_httpresponse(struct HTTPResponse *res);
 
-extern int set_header(struct HTTPResponse *res, char *version, enum StatusCode status, char *status_msg);
+extern struct HTTPHeader *get_header(struct HTTPResponse *res, char *header_name);
+extern int set_status(struct HTTPResponse *res, char *version, enum StatusCode status, char *status_msg);
 extern int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, Bytes content);
+extern int write_header(struct HTTPResponse *res, char *header_name, char *header_value);
 
 #endif

@@ -65,8 +65,9 @@ int send_response(int socketfd, struct HTTPResponse *res) {
     time_t val = time(NULL);
     struct tm *t = gmtime(&val);
     // day, dd mon year hh:mm:ss tmz
-    res->date = calloc(30, 1);
-    strftime(res->date, 30, "%a, %02d %b %Y %T UTC", t);
+    char *date = calloc(30, 1);
+    strftime(date, 30, "%a, %02d %b %Y %T UTC", t);
+    write_header(res, "Date", date);
 
     char *responseBuffer = build_httpresponse(res);
     int err = send(socketfd, responseBuffer, strlen(responseBuffer), 0);
@@ -101,30 +102,34 @@ void *handle_request(void *vargp) {
         default:
             printf("Method: UNKNOWN\n");
     }
-    printf("Route: %s\nVersion: %s\nHost: %s\nUser Agent: %s\nContent Length: %d\nContent Type: %s\nContent: %s\n\n", req->route, req->version, req->host, req->user_agent, req->content_length, req->content_type, (char *)req->content);
+    printf("Route: %s\nVersion: %s\nHost: %s\nUser Agent: %s\nContent Length: %d\nContent Type: %s\nContent: %s\n\n", req->route, req->version, req->host, req->user_agent, req->content_length, req->content_type, (char *)req->body);
 
 
     RouteHandler h = get_handler(server, req->method, req->route);
     if (h == NULL) {
         struct HTTPResponse *res = new_httpresponse();
         
-        set_header(res, "HTTP/1.1", NOT_FOUND, "Not Found");
+        set_status(res, "HTTP/1.1", NOT_FOUND, "Not Found");
 
-        res->server = calloc(strlen(SERVERNAME) + 1, 0);
-        strcpy(res->server, SERVERNAME);
+        /*res->server = calloc(strlen(SERVERNAME) + 1, 0);
+        strcpy(res->server, SERVERNAME);*/
+
+        write_header(res, "Server", SERVERNAME);
 
         const char *msg = "404 Not Found";
-        set_content(res, "text/html", strlen(msg), (uint8_t *)msg);
+        set_content(res, "text/html; charset=UTF-8", strlen(msg), (uint8_t *)msg);
 
         send_response(open_socket, res);
 
     } else {
         struct HTTPResponse *res = new_httpresponse();
         
-        set_header(res, "HTTP/1.1", OK, "OK");
+        set_status(res, "HTTP/1.1", OK, "OK");
 
-        res->server = calloc(strlen(SERVERNAME) + 1, 0);
-        strcpy(res->server, SERVERNAME);
+        /*res->server = calloc(strlen(SERVERNAME) + 1, 0);
+        strcpy(res->server, SERVERNAME);*/
+
+        write_header(res, "Server", SERVERNAME);
 
         // Call handler
         h(req, res);
