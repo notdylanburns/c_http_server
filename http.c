@@ -14,10 +14,8 @@ struct HTTPRequest *new_httprequest() {
     req->params = NULL;
     req->paramCount = 0;
     req->version = NULL;
-    req->host = NULL;
-    req->user_agent = NULL;
-    req->content_length = 0;
-    req->content_type = NULL;
+    req->headers = NULL;
+    req->header_count = 0;
     req->body = NULL;
     return req;
 }
@@ -209,10 +207,12 @@ int extract_version(int socketfd, struct HTTPRequest *req) {
 char *readKey(int socketfd) {
     char nextByte;
     char *key = malloc(1);
+    if (key == NULL) return NULL;
     int keyLen = 0;
     while (1) {
         read(socketfd, &nextByte, 1);
-        if (nextByte == ' ') {
+        if (nextByte == ':') {
+            read(socketfd, &nextByte, 1); //skip whitespace
             break;
         } else {
             keyLen++;
@@ -229,6 +229,8 @@ char *readKey(int socketfd) {
 char *readValue(int socketfd) {
     char nextByte;
     char *value = malloc(1);
+    if (value == NULL) return NULL;
+    value[0] = '\0';
     int valueLen = 0;
     while (1) {
         read(socketfd, &nextByte, 1);
@@ -265,7 +267,7 @@ struct HTTPRequest *build_httprequest(int socketfd) {
             break;
         }
 
-        if (strcmp(key, "Host:") == 0) {
+        /*if (strcmp(key, "Host:") == 0) {
             req->host = readValue(socketfd);
         } else if (strcmp(key, "User-Agent:") == 0) {
             req->user_agent = readValue(socketfd);
@@ -275,21 +277,31 @@ struct HTTPRequest *build_httprequest(int socketfd) {
             req->content_type = readValue(socketfd);
         } else {
             readValue(socketfd);
-        }
+        }*/
+
+        char *value = readValue(socketfd);
+        struct HTTPHeader *header = new_httpheader(key, value);
         free(key);
         key = NULL;
+        free(value);
+        value = NULL;
+        if (header == NULL) return NULL;
+        req->header_count++;
+        req->headers = realloc(req->headers, req->header_count * sizeof(struct HTTPHeader *));
+        if (req->headers == NULL) return NULL;
+        req->headers[req->header_count - 1] = header;
     }
 
-    if (req->content_length == 0) {
+    /*if (req->content_length == 0) {
         return req;
     } else {
-        /*char continue100[13] = "100 Continue";
-        send(socketfd, continue100, 13, 0);*/
+        //char continue100[13] = "100 Continue";
+        //send(socketfd, continue100, 13, 0);
 
         req->body = calloc(req->content_length + 1, 1);
         read(socketfd, req->body, req->content_length);
 
-    }
+    }*/
 
     return req;
 
@@ -311,17 +323,12 @@ void destroy_httprequest(struct HTTPRequest *req) {
     req->route = NULL;
     free(req->version);
     req->version = NULL;
-    free(req->host);
-    req->host = NULL;
-    free(req->user_agent);
-    req->user_agent = NULL;
-    free(req->content_type);
-    req->content_type = NULL;
     free(req->body);
     req->body = NULL;
     for (int i = 0; i < req->paramCount; i++) destroy_urlparam(req->params[i]);
     free(req->params);
     req->params = NULL;
+    for (int i = 0; i < req->header_count; i++) destroy_httpheader(req->headers[i]);
     free(req);
     req = NULL;
 }
@@ -340,6 +347,13 @@ struct HTTPResponse *new_httpresponse() {
     res->headers = NULL;
     res->header_count = 0;
     return res;
+}
+
+struct HTTPHeader *get_resheader(struct HTTPResponse *res, char *header_name) {
+    for (int i = 0; i < res->header_count; i++) {
+        if (strcmp(res->headers[i]->key, header_name) == 0) return res->headers[i];
+    }
+    return NULL;
 }
 
 char *build_httpresponse(struct HTTPResponse *res) {
@@ -361,7 +375,7 @@ char *build_httpresponse(struct HTTPResponse *res) {
 
     char *response = NULL;
     int response_length = header_length;
-    struct HTTPHeader *content_len = get_header(res, "Content-Length");
+    struct HTTPHeader *content_len = get_resheader(res, "Content-Length");
     if (res->body != NULL || content_len != NULL) {
         response_length += (atoi(content_len->value) + 2);
         response = calloc(response_length + 1, 1);
@@ -413,13 +427,6 @@ int set_status(struct HTTPResponse *res, char *version, enum StatusCode status, 
     return 0;
 }
 
-struct HTTPHeader *get_header(struct HTTPResponse *res, char *header_name) {
-    for (int i = 0; i < res->header_count; i++) {
-        if (strcmp(res->headers[i]->key, header_name) == 0) return res->headers[i];
-    }
-    return NULL;
-}
-
 int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, Bytes content) {
 
     int digits = floor((int)log10((int)abs(content_length))) + 1;
@@ -438,7 +445,7 @@ int set_content(struct HTTPResponse *res, MimeType content_type, int content_len
 }
 
 int write_header(struct HTTPResponse *res, char *header_name, char *header_value) {
-    struct HTTPHeader *old_header = get_header(res, header_name);
+    struct HTTPHeader *old_header = get_resheader(res, header_name);
     if (old_header == NULL) {
         res->header_count++;
         res->headers = realloc(res->headers, res->header_count * sizeof(struct HTTPHeader));

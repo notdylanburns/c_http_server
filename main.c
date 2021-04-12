@@ -5,7 +5,7 @@
 #include "http.h"
 #include "server.h"
 
-#define ROUTE(n) void n(struct HTTPRequest *req, struct HTTPResponse *res)
+#include "server_utils.h"
 
 struct Item {
     char *key;
@@ -14,6 +14,11 @@ struct Item {
 
 struct Item **items = NULL;
 int count = 0;
+
+STATIC(host_index_js, "scripts/index.js", "text/javascript; charset=UTF-8");
+STATIC(get_test, "html/index.html", "text/html; charset=UTF-8");
+STATIC(get_image, "img/index.jpg", "image/jpg");
+
 
 ROUTE(get_home) {
     int size = 0;
@@ -45,31 +50,6 @@ ROUTE(get_add) {
     items[count++] = i;
     write_header(res, "Location", "/");
     set_status(res, "HTTP/1.1", PERMANENT_REDIRECT, "Permanent Redirect");
-}
-
-ROUTE(get_test) {
-    FILE *f = fopen("html/index.html", "rb");
-    fseek(f, 0, SEEK_END);
-    int filesize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char fileContents[filesize];
-    fread(fileContents, 1, filesize, f);
-    printf(fileContents);
-
-    set_content(res, "text/html; charset=UTF-8", filesize, (Bytes)fileContents);
-};
-
-ROUTE(get_image) {
-    FILE *f = fopen("img/index.jpg", "rb");
-    fseek(f, 0, SEEK_END);
-    int filesize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char fileContents[filesize];
-    fread(fileContents, 1, filesize, f);
-
-    set_content(res, "image/jpg", filesize, (Bytes)fileContents);
 };
 
 int main(int argc, char **argv) {
@@ -79,8 +59,9 @@ int main(int argc, char **argv) {
     route(server, GET, "/", &get_home);
     route(server, GET, "/add", &get_add);
     route(server, GET, "/test", &get_test);
-    route(server, GET, "/image", &get_image);
-
+    RESOURCE(server, "/image", get_image);
+    RESOURCE(server, "/scripts/index.js", host_index_js);
+    
     run_server(server, 8080);
 
     return 0;

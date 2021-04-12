@@ -112,10 +112,12 @@ struct HTTPRequest {
     struct URLParam **params;
     int paramCount;
     char *version;
-    char *host;
+    /*char *host;
     char *user_agent;
     int content_length;
-    MimeType content_type;
+    MimeType content_type;*/
+    struct HTTPHeader **headers;
+    int header_count;
     uint8_t *body;
 };
 
@@ -123,6 +125,8 @@ extern struct HTTPRequest *new_httprequest();
 extern struct HTTPRequest *build_httprequest(int socketfd);
 extern void destroy_httprequest(struct HTTPRequest *req);
 extern char *get_urlparam(struct HTTPRequest *req, char *key);
+
+extern struct HTTPHeader *get_header(struct HTTPRequest *req, char *header_name);
 
 struct HTTPResponse {
     char *version;
@@ -141,7 +145,6 @@ extern struct HTTPResponse *new_httpresponse();
 extern char *build_httpresponse(struct HTTPResponse *res);
 extern void destroy_httpresponse(struct HTTPResponse *res);
 
-extern struct HTTPHeader *get_header(struct HTTPResponse *res, char *header_name);
 extern int set_status(struct HTTPResponse *res, char *version, enum StatusCode status, char *status_msg);
 extern int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, Bytes content);
 extern int write_header(struct HTTPResponse *res, char *header_name, char *header_value);

@@ -91,22 +91,24 @@ void *handle_request(void *vargp) {
     if (req == NULL) return NULL;
     switch (req->method) {
         case GET:
-            printf("Method: GET\n");
+            printf("GET");
             break;
         case POST:
-            printf("Method: POST\n");
+            printf("POST");
             break;
         case PUT:
-            printf("Method: PUT\n");
+            printf("PUT");
             break;
         case DELETE:
-            printf("Method: DELETE\n");
+            printf("DELETE");
             break;
         default:
-            printf("Method: UNKNOWN\n");
+            printf("UNDEFINED");
     }
-    printf("Route: %s\nVersion: %s\nHost: %s\nUser Agent: %s\nContent Length: %d\nContent Type: %s\nContent: %s\n\n", req->route, req->version, req->host, req->user_agent, req->content_length, req->content_type, (char *)req->body);
-
+    printf(" %s %s\n", req->route, req->version);
+    for (int i = 0; i < req->header_count; i++) {
+        printf("%s: %s\n", req->headers[i]->key, req->headers[i]->value);
+    }
 
     RouteHandler h = get_handler(server, req->method, req->route);
     if (h == NULL) {
