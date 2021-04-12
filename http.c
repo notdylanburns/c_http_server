@@ -364,7 +364,7 @@ char *build_httpresponse(struct HTTPResponse *res) {
     struct HTTPHeader *content_len = get_header(res, "Content-Length");
     if (res->body != NULL || content_len != NULL) {
         response_length += (atoi(content_len->value) + 2);
-        response = calloc(response_length, 1);
+        response = calloc(response_length + 1, 1);
         if (response == NULL) return NULL;
         strcat(response, headers);
         strcat(response, "\r\n");
@@ -372,7 +372,7 @@ char *build_httpresponse(struct HTTPResponse *res) {
         // Has potential to cause heap corruption due to buffer overflow
         // with additional null terminator sprintf(response, "%s\r\n%s", headers, res->body);
     } else {
-        response = calloc(response_length, 1);
+        response = calloc(response_length + 1, 1);
         if (response == NULL) return NULL;
         memcpy(response, headers, response_length);
     }
@@ -429,7 +429,7 @@ int set_content(struct HTTPResponse *res, MimeType content_type, int content_len
     if (write_header(res, "Content-Type", content_type) != 0) return 1;
     if (write_header(res, "Content-Length", content_len_s) != 0) return 1;
     free(content_len_s);
-    res->body = realloc(res->body, content_length);
+    res->body = realloc(res->body, content_length + 1);
     if (res->body == NULL) return 1;
     memcpy(res->body, content, content_length);
 
