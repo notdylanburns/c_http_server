@@ -21,7 +21,7 @@ ROUTE(get_home) {
         size += (strlen(items[i]->key) + strlen(items[i]->value) + 8);
     }
     if (size) {
-        char response[size];
+        char response[size + 1];
         response[0] = '\0';
         for (int i = 0; i < count; i++) {
             strcat(response, items[i]->key);
@@ -44,7 +44,7 @@ ROUTE(get_add) {
     i->value = v;
     items[count++] = i;
     write_header(res, "Location", "/");
-    set_status(res, "HTTP/1.1", CREATED, "Created");
+    set_status(res, "HTTP/1.1", PERMANENT_REDIRECT, "Permanent Redirect");
 }
 
 ROUTE(get_test) {

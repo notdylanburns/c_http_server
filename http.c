@@ -276,6 +276,8 @@ struct HTTPRequest *build_httprequest(int socketfd) {
         } else {
             readValue(socketfd);
         }
+        free(key);
+        key = NULL;
     }
 
     if (req->content_length == 0) {
@@ -296,7 +298,7 @@ struct HTTPRequest *build_httprequest(int socketfd) {
 char *get_urlparam(struct HTTPRequest *req, char *key) {
     for (int i = 0; i < req->paramCount; i++) {
         if (strcmp(req->params[i]->key, key) == 0) {
-            char *returnVal = calloc(strlen(req->params[i]->value), 1);
+            char *returnVal = calloc(strlen(req->params[i]->value) + 1, 1);
             strcpy(returnVal, req->params[i]->value);
             return returnVal;
         }
@@ -358,17 +360,21 @@ char *build_httpresponse(struct HTTPResponse *res) {
     };
 
     char *response = NULL;
-    int response_length = header_length + 2;
+    int response_length = header_length;
     struct HTTPHeader *content_len = get_header(res, "Content-Length");
     if (res->body != NULL || content_len != NULL) {
-        response_length += atoi(content_len->value);
+        response_length += (atoi(content_len->value) + 2);
         response = calloc(response_length, 1);
         if (response == NULL) return NULL;
-        sprintf(response, "%s\r\n%s", headers, res->body);
+        strcat(response, headers);
+        strcat(response, "\r\n");
+        strcat(response, (char *)res->body);
+        // Has potential to cause heap corruption due to buffer overflow
+        // with additional null terminator sprintf(response, "%s\r\n%s", headers, res->body);
     } else {
         response = calloc(response_length, 1);
         if (response == NULL) return NULL;
-        sprintf(response, "%s\r\n", headers);
+        memcpy(response, headers, response_length);
     }
 
     return response;
@@ -380,6 +386,9 @@ void destroy_httpresponse(struct HTTPResponse *res) {
     res->version = NULL;
     free(res->status_msg);
     res->status_msg = NULL;
+    for (int i = 0; i < res->header_count; i++) destroy_httpheader(res->headers[i]);
+    free(res->headers);
+    res->headers = NULL;
     free(res->body);
     res->body = NULL;
     free(res);
@@ -413,7 +422,8 @@ struct HTTPHeader *get_header(struct HTTPResponse *res, char *header_name) {
 
 int set_content(struct HTTPResponse *res, MimeType content_type, int content_length, Bytes content) {
 
-    char *content_len_s = calloc(floor(log10(abs(content_length))) + 2, 1);
+    int digits = floor((int)log10((int)abs(content_length))) + 1;
+    char *content_len_s = calloc(digits + 1, 1);
     if (content_len_s == NULL) return 1;
     sprintf(content_len_s, "%d", content_length);
     if (write_header(res, "Content-Type", content_type) != 0) return 1;

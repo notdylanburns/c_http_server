@@ -72,6 +72,9 @@ int send_response(int socketfd, struct HTTPResponse *res) {
     char *responseBuffer = build_httpresponse(res);
     int err = send(socketfd, responseBuffer, strlen(responseBuffer), 0);
 
+    printf("%s\n\n", responseBuffer);
+
+    free(date);
     free(responseBuffer);
     destroy_httpresponse(res);
 
